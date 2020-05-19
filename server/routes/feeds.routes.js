@@ -15,4 +15,11 @@ feedsRouter.post('/post', [
 
 feedsRouter.get('/post/:postId', feedsController.fetchSinglePost);
 
+feedsRouter.put('/post/:postId', [
+    body('title').trim().isLength({ min: 5 }),
+    body('content').trim().isLength({ min: 5 })
+], feedsController.editPost);
+
+feedsRouter.delete('/post/:postId', feedsController.deletePost);
+
 module.exports = feedsRouter;
