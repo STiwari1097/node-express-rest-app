@@ -7,6 +7,7 @@ const multer = require('multer');
 const { v4 } = require('uuid');
 
 const feedsRouter = require('./routes/feeds.routes');
+const authRouter = require('./routes/auth.routes');
 
 const app = express();
 const fileStorage = multer.diskStorage({
@@ -27,7 +28,6 @@ const fileFilter = (req, file, cb) => {
 
 app.use(bodyParser.json());
 app.use(multer({ storage: fileStorage, fileFilter: fileFilter }).single('image'));
-
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
@@ -36,14 +36,16 @@ app.use((req, res, next) => {
 });
 
 app.use('/assets/images', express.static(path.join(__dirname, 'assets', 'images')));
-
 app.use('/feeds', feedsRouter);
+app.use('/auth', authRouter);
 
 app.use((error, req, res, next) => {
     const status = error.statusCode || 500;
     const message = error.message;
+    const data = error.data;
     res.status(status).json({
-        message: message
+        message: message,
+        data: data
     });
 });
 
