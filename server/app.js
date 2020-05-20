@@ -8,6 +8,8 @@ const { v4 } = require('uuid');
 
 const feedsRouter = require('./routes/feeds.routes');
 const authRouter = require('./routes/auth.routes');
+const corsMiddleware = require('./middlewares/cors');
+const errorHandlerMiddleware = require('./middlewares/error-handler');
 
 const app = express();
 const fileStorage = multer.diskStorage({
@@ -28,26 +30,11 @@ const fileFilter = (req, file, cb) => {
 
 app.use(bodyParser.json());
 app.use(multer({ storage: fileStorage, fileFilter: fileFilter }).single('image'));
-app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    next();
-});
-
+app.use(corsMiddleware);
 app.use('/assets/images', express.static(path.join(__dirname, 'assets', 'images')));
 app.use('/feeds', feedsRouter);
 app.use('/auth', authRouter);
-
-app.use((error, req, res, next) => {
-    const status = error.statusCode || 500;
-    const message = error.message;
-    const data = error.data;
-    res.status(status).json({
-        message: message,
-        data: data
-    });
-});
+app.use(errorHandlerMiddleware);
 
 mongoose.connect('mongodb+srv://shubham:newUser123@cluster0-3gwoz.mongodb.net/message-node?retryWrites=true&w=majority',
     {
