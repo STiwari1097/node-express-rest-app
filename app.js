@@ -1,8 +1,11 @@
 const path = require('path');
+const fs = require('fs');
 
 const bodyParser = require('body-parser');
 const express = require('express');
+const helmet = require('helmet');
 const mongoose = require('mongoose');
+const morgan = require('morgan');
 const multer = require('multer');
 const { v4 } = require('uuid');
 
@@ -27,7 +30,13 @@ const fileFilter = (req, file, cb) => {
     }
     cb(null, true);
 };
+const accessLogStream = fs.createWriteStream(
+    path.join(__dirname, 'access.log'),
+    { flag: 'a' }
+);
 
+app.use(helmet());
+app.use(morgan('combined', { stream: accessLogStream }));
 app.use(bodyParser.json());
 app.use(multer({ storage: fileStorage, fileFilter: fileFilter }).single('image'));
 app.use(corsMiddleware);
@@ -36,14 +45,14 @@ app.use('/feeds', feedsRouter);
 app.use('/auth', authRouter);
 app.use(errorHandlerMiddleware);
 
-mongoose.connect('mongodb+srv://shubham:newUser123@cluster0-3gwoz.mongodb.net/message-node?retryWrites=true&w=majority',
+mongoose.connect(`mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@cluster0-3gwoz.mongodb.net/${process.env.MONGO_DATABASE}?retryWrites=true&w=majority`,
     {
         useNewUrlParser: true,
         useUnifiedTopology: true
     })
     .then(res => {
-        app.listen(8080, () => {
-            console.log('Node.js server is running on port:8080...')
+        app.listen(process.env.PORT || 8080, () => {
+            console.log(`Node.js server is running on port:${process.env.PORT || 8080}...`)
         });
     })
     .catch(err => console.log(err));
