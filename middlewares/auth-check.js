@@ -7,6 +7,7 @@ const authCheckMiddleware = (req, res, next) => {
     if (!authHeader) {
         throw generateError('Not authenticated!', 401);
     }
+
     let reqToken,
         decodedToken;
     reqToken = authHeader.split(' ')[1];

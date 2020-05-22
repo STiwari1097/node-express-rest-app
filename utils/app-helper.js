@@ -3,4 +3,4 @@ exports.generateError = (message, statusCode, data) => {
     error.statusCode = statusCode;
     error.data = data;
     return error;
-}
+};

@@ -22,9 +22,7 @@ exports.fetchPosts = (req, res, next) => {
         })
         .then(posts => {
             if (!posts) {
-                const error = new Error('No post found!');
-                error.statusCode = 404;
-                throw error;
+                throw generateError('No post found!', 404);
             } else {
                 res.status(200).json({
                     posts: posts,
@@ -38,14 +36,10 @@ exports.fetchPosts = (req, res, next) => {
 exports.createPost = (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        const error = new Error('Validations failed!');
-        error.statusCode = 422;
-        throw error;
+        throw generateError('Validations failed!', 422);
     }
     if (!req.file) {
-        const error = new Error('Image is missing!');
-        error.statusCode = 422;
-        throw error;
+        throw generateError('Image is missing!', 422);
     }
 
     const filePathArray = req.file.path.split("\\");
@@ -70,11 +64,10 @@ exports.createPost = (req, res, next) => {
             return user.save();
         })
         .then(user => {
-            socket.getSocket().emit('posts',
-                {
-                    action: 'create',
-                    post: { ...post._doc, creator: { _id: req.userId, name: user.name } }
-                });
+            socket.getSocket().emit('posts', {
+                action: 'create',
+                post: { ...post._doc, creator: { _id: req.userId, name: user.name } }
+            });
             res.status(201).json({
                 message: 'Post created successfully!',
                 post: updatedPost,
@@ -89,9 +82,7 @@ exports.fetchSinglePost = (req, res, next) => {
     Post.findById(postId)
         .then(post => {
             if (!post) {
-                const error = new Error('Post not found!');
-                error.statusCode = 404;
-                throw error;
+                throw generateError('Post not found!', 404);
             } else {
                 res.status(200).json({
                     post: post
@@ -102,11 +93,9 @@ exports.fetchSinglePost = (req, res, next) => {
 };
 
 exports.editPost = (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        const error = new Error('Validations failed!');
-        error.statusCode = 422;
-        throw error;
+    const validationErrors = validationResult(req);
+    if (!validationErrors.isEmpty()) {
+        throw generateError('Validations failed!', 422, validationErrors.array());
     }
 
     const postId = req.params.postId;
@@ -121,23 +110,17 @@ exports.editPost = (req, res, next) => {
         }, '');
     }
     if (!imageUrl) {
-        const error = new Error('No file picked!');
-        error.statusCode = 422;
-        throw error;
+        throw generateError('No file picked!', 422);
     }
 
     Post.findById(postId)
         .populate('creator')
         .then(post => {
             if (!post) {
-                const error = new Error('Post not found!');
-                error.statusCode = 404;
-                throw error;
+                throw generateError('Post not found!', 404);
             }
             if (post.creator._id.toString() !== req.userId) {
-                const error = new Error('Unauthorized to edit post!');
-                error.statusCode = 403;
-                throw error;
+                throw generateError('Unauthorized to edit post!', 403);
             }
             if (imageUrl !== post.imageUrl) {
                 clearImage(post.imageUrl);
@@ -148,11 +131,10 @@ exports.editPost = (req, res, next) => {
             return post.save();
         })
         .then(result => {
-            socket.getSocket().emit('posts',
-                {
-                    action: 'update',
-                    post: result
-                });
+            socket.getSocket().emit('posts', {
+                action: 'update',
+                post: result
+            });
             res.status(200).json({
                 message: 'Post updated successfully!',
                 post: result
@@ -166,14 +148,10 @@ exports.deletePost = (req, res, next) => {
     Post.findById(postId)
         .then(post => {
             if (!post) {
-                const error = new Error('Post not found!');
-                error.statusCode = 404;
-                throw error;
+                throw generateError('Post not found!', 404);
             }
             if (post.creator.toString() !== req.userId) {
-                const error = new Error('Unauthorized to delete post!');
-                error.statusCode = 403;
-                throw error;
+                throw generateError('Unauthorized to edit post!', 403);
             }
             clearImage(post.imageUrl);
             return Post.findByIdAndRemove(postId);

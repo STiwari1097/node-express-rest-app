@@ -14,7 +14,8 @@ feedsRouter.post('/post',
     [
         body('title').trim().isLength({ min: 5 }),
         body('content').trim().isLength({ min: 5 })
-    ], feedsController.createPost);
+    ],
+    feedsController.createPost);
 
 feedsRouter.get('/post/:postId', authCheckMiddleware, feedsController.fetchSinglePost);
 
@@ -23,7 +24,8 @@ feedsRouter.put('/post/:postId',
     [
         body('title').trim().isLength({ min: 5 }),
         body('content').trim().isLength({ min: 5 })
-    ], feedsController.editPost);
+    ],
+    feedsController.editPost);
 
 feedsRouter.delete('/post/:postId', authCheckMiddleware, feedsController.deletePost);
 

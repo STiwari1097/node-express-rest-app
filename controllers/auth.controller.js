@@ -1,17 +1,14 @@
-const { validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { validationResult } = require('express-validator');
 
 const User = require('../models/user.model');
+const { generateError } = require('../utils/app-helper');
 
 exports.signup = (req, res, next) => {
-    console.log(req.body);
     const validationErrors = validationResult(req);
     if (!validationErrors.isEmpty()) {
-        const error = new Error('Validations falied!');
-        error.statusCode = 422;
-        error.data = validationErrors.array();
-        throw error;
+        throw generateError('Validations falied!', 422, validationErrors.array());
     }
 
     const name = req.body.name;
@@ -42,26 +39,19 @@ exports.signin = (req, res, next) => {
     User.findOne({ email: email })
         .then(user => {
             if (!user) {
-                const error = new Error('User with this Email ID doesn\'t exist');
-                error.statusCode = 401;
-                throw error;
+                throw generateError('User with this Email ID doesn\'t exist', 401);
             }
             loadedUser = user;
             return bcrypt.compare(password, user.password);
         })
         .then(isEqual => {
             if (!isEqual) {
-                const error = new Error('Password is incorrect!');
-                error.statusCode = 401;
-                throw error;
+                throw generateError('Password is incorrect!', 401);
             }
-            const token = jwt.sign(
-                {
-                    email: loadedUser.email,
-                    userId: loadedUser._id.toString()
-                },
-                'supersecretkey',
-                { expiresIn: '1h' }
+            const token = jwt.sign({
+                email: loadedUser.email,
+                userId: loadedUser._id.toString()
+            }, 'supersecretkey', { expiresIn: '1h' }
             );
             res.status(200).json({ token: token, userId: loadedUser._id.toString(), expiresIn: 3600 });
         })
@@ -72,9 +62,7 @@ exports.getUserStatus = (req, res, next) => {
     User.findById(req.userId)
         .then(user => {
             if (!user) {
-                const error = new Error('User not found!');
-                error.statusCode = 404;
-                throw error;
+                throw generateError('User not found!', 404);
             }
             res.status(200).json({ status: user.status });
         })
@@ -86,9 +74,7 @@ exports.updateUserStatus = (req, res, next) => {
     User.findById(req.userId)
         .then(user => {
             if (!user) {
-                const error = new Error('User not found!');
-                error.statusCode = 404;
-                throw error;
+                throw generateError('User not found!', 404);
             }
             user.status = userStatus;
             return user.save();
