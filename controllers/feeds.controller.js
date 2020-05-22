@@ -6,6 +6,7 @@ const { validationResult } = require('express-validator');
 const Post = require('../models/post.model');
 const User = require('../models/user.model');
 const socket = require('../utils/socket');
+const { generateError } = require('../utils/app-helper');
 
 exports.fetchPosts = (req, res, next) => {
     const currentPage = req.query.page || 1;
