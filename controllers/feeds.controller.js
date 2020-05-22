@@ -5,15 +5,20 @@ const { validationResult } = require('express-validator');
 
 const Post = require('../models/post.model');
 const User = require('../models/user.model');
+const socket = require('../utils/socket');
 
 exports.fetchPosts = (req, res, next) => {
-    const currentPage = req.query.page;
+    const currentPage = req.query.page || 1;
     const itemsPerPage = 2;
     let totalItems;
     Post.find().countDocuments()
         .then(count => {
             totalItems = count;
-            return Post.find().skip((currentPage - 1) * itemsPerPage).limit(itemsPerPage);
+            return Post.find()
+                .populate('creator')
+                .sort({ createdAt: -1 })
+                .skip((currentPage - 1) * itemsPerPage)
+                .limit(itemsPerPage);
         })
         .then(posts => {
             if (!posts) {
@@ -65,6 +70,11 @@ exports.createPost = (req, res, next) => {
             return user.save();
         })
         .then(user => {
+            socket.getSocket().emit('posts',
+                {
+                    action: 'create',
+                    post: { ...post._doc, creator: { _id: req.userId, name: user.name } }
+                });
             res.status(201).json({
                 message: 'Post created successfully!',
                 post: updatedPost,
@@ -117,13 +127,14 @@ exports.editPost = (req, res, next) => {
     }
 
     Post.findById(postId)
+        .populate('creator')
         .then(post => {
             if (!post) {
                 const error = new Error('Post not found!');
                 error.statusCode = 404;
                 throw error;
             }
-            if (post.creator.toString() !== req.userId) {
+            if (post.creator._id.toString() !== req.userId) {
                 const error = new Error('Unauthorized to edit post!');
                 error.statusCode = 403;
                 throw error;
@@ -137,6 +148,11 @@ exports.editPost = (req, res, next) => {
             return post.save();
         })
         .then(result => {
+            socket.getSocket().emit('posts',
+                {
+                    action: 'update',
+                    post: result
+                });
             res.status(200).json({
                 message: 'Post updated successfully!',
                 post: result
@@ -170,6 +186,11 @@ exports.deletePost = (req, res, next) => {
             return user.save();
         })
         .then(user => {
+            socket.getSocket().emit('posts',
+                {
+                    action: 'delete',
+                    post: postId
+                });
             res.status(200).json({
                 message: 'Post deleted successfully!'
             });

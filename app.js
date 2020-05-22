@@ -51,8 +51,12 @@ mongoose.connect(`mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PA
         useUnifiedTopology: true
     })
     .then(res => {
-        app.listen(process.env.PORT || 8080, () => {
+        const server = app.listen(process.env.PORT || 8080, () => {
             console.log(`Node.js server is running on port:${process.env.PORT || 8080}...`)
+        });
+        const socket = require('./utils/socket').init(server);
+        socket.on('connection', client => {
+            console.log('Client connected through websocket!');
         });
     })
     .catch(err => console.log(err));
